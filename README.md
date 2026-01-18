@@ -4,12 +4,11 @@ An AI agent that drafts your weekly 5:15 status update by combining data from Go
 
 ## What It Does
 
-1. **Pulls calendar events** for the current week (Mon-Fri)
-2. **Fetches Granola notes** from Notion and matches them to meetings
+1. **Pulls calendar events** for the current week (Mon-Fri), filtering out recurring meetings and unconfirmed events
+2. **Fetches Granola notes** from your local Granola cache and matches them to meetings
 3. **Analyzes Slack activity** in channels where you posted 2+ messages
-4. **Retrieves last week's 5:15** to carry forward priorities
-5. **Generates a draft** using Claude with your writing style
-6. **Writes the draft** directly to Notion
+4. **Generates a draft** using Claude via Vercel AI Gateway
+5. **Appends the draft** directly to your existing 5:15 Notion page
 
 ## Setup
 
@@ -20,18 +19,17 @@ cd ~/515-agent
 npm install
 ```
 
-### 2. Configure Granola → Notion Sync
+### 2. Prerequisites
 
-1. Open Granola: **Settings → Integrations → Notion**
-2. Connect your Notion workspace
-3. Create a database called "Meeting Notes" (or use existing)
-4. Note the database ID from the URL: `notion.so/[workspace]/[DATABASE_ID]?v=...`
+- **Granola** installed and running locally (the agent reads from `~/Library/Application Support/Granola/cache-v3.json`)
+- A Notion page where you keep your 5:15 updates
 
 ### 3. Get API Credentials
 
-#### Anthropic API Key
-- Go to [console.anthropic.com](https://console.anthropic.com)
-- Create an API key
+#### Vercel AI Gateway Key
+1. Go to [vercel.com/dashboard](https://vercel.com/dashboard)
+2. Navigate to your project → Settings → AI Gateway
+3. Create an AI Gateway API key
 
 #### Google Calendar OAuth
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
@@ -41,7 +39,7 @@ npm install
 5. Download credentials and get:
    - Client ID
    - Client Secret
-6. Get a refresh token by running the OAuth flow once
+6. Get a refresh token by running: `npx tsx scripts/get-google-token.ts`
 
 #### Slack Token
 1. Go to [api.slack.com/apps](https://api.slack.com/apps)
@@ -58,7 +56,7 @@ npm install
 1. Go to [notion.so/my-integrations](https://www.notion.so/my-integrations)
 2. Create a new integration
 3. Copy the Internal Integration Token
-4. Share your Granola database AND 5:15 page with the integration
+4. **Important:** Share your 5:15 page with the integration (click "..." → "Add connections")
 
 ### 4. Create .env File
 
@@ -69,27 +67,32 @@ cp .env.example .env
 Edit `.env` with your credentials:
 
 ```env
-ANTHROPIC_API_KEY=sk-ant-...
+# Vercel AI Gateway
+AI_GATEWAY_API_KEY=...
+
+# Google Calendar OAuth
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 GOOGLE_REFRESH_TOKEN=...
+
+# Slack
 SLACK_TOKEN=xoxp-...
 SLACK_USER_ID=U...
+
+# Notion
 NOTION_TOKEN=secret_...
-NOTION_GRANOLA_DB_ID=...
-NOTION_515_PAGE_ID=...
-YOUR_NAME=Zack
+NOTION_GRANOLA_DB_ID=...      # Optional: for Notion fallback
+NOTION_515_PAGE_ID=...         # Your 5:15 page ID
+
+# Your name (for personalization)
+YOUR_NAME=YourName
 ```
 
-### 5. Find Your Notion IDs
+### 5. Find Your Notion 5:15 Page ID
 
-**Granola Database ID:**
-- Open your Granola meeting notes database in Notion
-- Copy the ID from the URL: `notion.so/[workspace]/[DATABASE_ID]?v=...`
-
-**5:15 Parent Page ID:**
-- Open the page where you want 5:15 drafts created
+- Open your 5:15 page in Notion
 - Copy the ID from the URL: `notion.so/[workspace]/[PAGE_ID]`
+- The ID is the 32-character string (with or without dashes)
 
 ## Usage
 
@@ -114,24 +117,38 @@ crontab -e
 
 ## Output
 
-The agent creates a new Notion page under your 5:15 parent page with:
+The agent appends to your existing 5:15 Notion page with:
 
-- **TLDR**: 2-3 sentence summary
-- **What I did**: Bullet points with @mentions and #channels
-- **What I am thinking about**: Left blank for you to write
-- **What I am prioritizing next week**: Carried forward + new items
+- **Divider** separating from previous entries
+- **Date** header
+- **:tldr:** 2-3 sentence summary
+- **✅ What I did**: Bullet points from meetings with Granola notes
+- **🧠 What I am thinking about**: Empty for you to fill in
+- **🏗️ What I am prioritizing next week**: Generated priorities
 
-Meetings without Granola notes are flagged with ⚠️ so you know to fill in details.
+## How It Works
+
+1. **Calendar filtering**: Removes recurring meetings (standups, syncs) and meetings you haven't accepted
+2. **Granola matching**: Matches calendar events to Granola notes by title similarity and time proximity
+3. **Content extraction**: Pulls meeting summaries, notes, and action items from Granola's local cache
+4. **AI synthesis**: Claude analyzes all data and generates a cohesive 5:15 draft
+5. **Notion output**: Appends the draft to your existing 5:15 page
 
 ## Customization
 
+### Adjust Meeting Filtering
+
+Edit `src/synthesis/draft.ts` to change which meetings are included:
+- `isRecurring` - filters recurring calendar events
+- `myResponseStatus` - filters by your RSVP status
+
 ### Adjust Slack Filtering
 
-Edit `src/collectors/slack.ts` line with `channel.messages.length > 1` to change the minimum message threshold.
+Edit `src/collectors/slack.ts` to change the minimum message threshold (default: 2+ messages per channel).
 
 ### Modify the Prompt
 
-The synthesis prompt is in `src/synthesis/draft.ts` in the `buildPrompt` function. Adjust the tone, structure, or instructions there.
+The synthesis prompt is in `src/synthesis/draft.ts`. Adjust the tone, structure, or instructions there.
 
 ### Change Output Format
 
@@ -143,9 +160,13 @@ Modify the Notion blocks in `src/output/notion.ts` to adjust headings, emojis, o
 - Make sure all variables in `.env` are set
 - Check there are no extra spaces around values
 
-**"Granola notes not matching"**
-- Ensure the Date property in your Granola Notion database matches the expected format
-- Check that meeting titles in Granola roughly match calendar event titles
+**"No Granola notes found"**
+- Make sure Granola is installed and has been used for meetings
+- Check that `~/Library/Application Support/Granola/cache-v3.json` exists
+
+**"Calendar events not matching Granola notes"**
+- Meeting titles need to be similar between Calendar and Granola
+- Times should be within a few hours of each other
 
 **"No Slack messages found"**
 - Verify your SLACK_USER_ID is correct
@@ -153,5 +174,5 @@ Modify the Notion blocks in `src/output/notion.ts` to adjust headings, emojis, o
 - Note: DMs are filtered out by default
 
 **"Notion API error"**
-- Make sure the integration is shared with both the Granola DB and 5:15 page
-- Verify the page/database IDs are correct (not the URL, just the ID portion)
+- Make sure the integration is shared with your 5:15 page
+- Verify the page ID is correct (32-character string from URL)
