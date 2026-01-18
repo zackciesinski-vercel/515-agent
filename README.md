@@ -24,6 +24,8 @@ npm install
 - **Granola** installed and running locally (the agent reads from `~/Library/Application Support/Granola/cache-v3.json`)
 - A Notion page where you keep your 5:15 updates
 
+> **Note:** This project uses the same local Granola cache as the [Granola MCP Server](https://github.com/vercel-labs/granola-mcp-server-ts), which provides MCP tools for querying your meeting notes from Claude Code or other MCP-compatible clients.
+
 ### 3. Get API Credentials
 
 #### Vercel AI Gateway Key
