@@ -50,6 +50,7 @@ export async function getThisWeeksMeetings(): Promise<CalendarEvent[]> {
 
   return events
     .filter(event => event.status !== 'cancelled')
+    .filter(event => event.visibility !== 'private' && event.visibility !== 'confidential')
     .map(event => {
       // Find my response status
       const selfAttendee = (event.attendees || []).find(a => a.self);
