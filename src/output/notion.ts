@@ -111,14 +111,14 @@ function bulletItem(text: string): any {
 }
 
 /**
- * Parse text to handle @mentions and #channels
+ * Parse text to handle **bold**, @mentions and #channels
  * Returns rich_text array for Notion
  */
 function parseRichText(text: string): any[] {
   const parts: any[] = [];
 
-  // Pattern to match @Name Name or #channel-name
-  const pattern = /(@[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*|#[\w-]+)/g;
+  // Pattern to match **bold**, @Name Name, or #channel-name
+  const pattern = /(\*\*[^*]+\*\*|@[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*|#[\w-]+)/g;
 
   let lastIndex = 0;
   let match;
@@ -132,12 +132,23 @@ function parseRichText(text: string): any[] {
       });
     }
 
-    // Add the @mention or #channel with bold formatting
-    parts.push({
-      type: 'text',
-      text: { content: match[0] },
-      annotations: { bold: true },
-    });
+    const matchedText = match[0];
+
+    if (matchedText.startsWith('**') && matchedText.endsWith('**')) {
+      // Bold text - remove ** and add bold annotation
+      parts.push({
+        type: 'text',
+        text: { content: matchedText.slice(2, -2) },
+        annotations: { bold: true },
+      });
+    } else {
+      // @mention or #channel - add bold formatting
+      parts.push({
+        type: 'text',
+        text: { content: matchedText },
+        annotations: { bold: true },
+      });
+    }
 
     lastIndex = pattern.lastIndex;
   }

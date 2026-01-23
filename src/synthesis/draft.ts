@@ -136,6 +136,13 @@ export async function synthesizeDraft(): Promise<Draft515> {
 
 Today is ${today}. You're drafting the 5:15 for the week of ${weekRange.display}.
 
+## CRITICAL RULES
+- ONLY use information explicitly provided in the meeting notes below
+- DO NOT invent, assume, or hallucinate any details not in the notes
+- DO NOT make up what was discussed if it's not in the notes
+- If a meeting has notes, summarize ONLY what the notes say
+- Skip meetings that don't have notes entirely
+
 ## 5:15 Format
 
 Your response should be a complete 5:15 in this exact format:
@@ -143,27 +150,24 @@ Your response should be a complete 5:15 in this exact format:
 ## ${today}
 
 ### :tldr: TLDR
-[2-3 sentences summarizing the week's highlights and key outcomes]
+[2-3 sentences summarizing the week based ONLY on the provided notes]
 
 ### ✅ What I did
-- [Bullet points with specific accomplishments from meetings WITH Granola notes]
-- [Use @FirstName LastName for people mentions]
-- [Use #channel-name for Slack channels]
-- [ONLY include meetings that have Granola notes - skip meetings without notes]
+- [One bullet per meeting that has notes]
+- [Summarize what the notes actually say - don't invent details]
+- [Use @FirstName LastName for people mentioned IN the notes]
+- [Skip meetings without notes]
 
 ### 🧠 What I am thinking about
 <!-- ${config.yourName} will write this section -->
 
 ### 🏗️ What I am prioritizing next week
-- [Carry forward incomplete priorities from last week]
-- [Add new priorities based on this week's meetings and follow-ups]
+- [Extract action items and follow-ups ONLY from the provided notes]
 
 ## Style Guidelines
-- Be concise and specific - no fluff
-- Focus on outcomes and decisions, not just activities
-- Highlight blockers or risks if any
-- Group related items together
-- For meetings without notes, still include them but mark with ⚠️`;
+- Be concise and factual
+- Only state what's in the notes - nothing more
+- Don't embellish or add context not in the source data`;
 
   const prompt = `Please draft my 5:15 for this week based on the following data:
 

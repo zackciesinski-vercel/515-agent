@@ -227,9 +227,6 @@ function extractMentions(content: string): string[] {
 export async function getThisWeeksNotes(): Promise<GranolaNote[]> {
   const now = new Date();
   const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday
-  const weekEnd = endOfWeek(now, { weekStartsOn: 1 }); // Sunday
-
-  // Limit to Friday for work week
   const fridayEnd = new Date(weekStart);
   fridayEnd.setDate(weekStart.getDate() + 4);
   fridayEnd.setHours(23, 59, 59, 999);

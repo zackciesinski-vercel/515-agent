@@ -29,9 +29,6 @@ export async function getThisWeeksMeetings(): Promise<CalendarEvent[]> {
   // Get Monday-Friday of current week
   const now = new Date();
   const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday
-  const weekEnd = endOfWeek(now, { weekStartsOn: 1 }); // Sunday
-
-  // Adjust to Friday end
   const fridayEnd = new Date(weekStart);
   fridayEnd.setDate(weekStart.getDate() + 4);
   fridayEnd.setHours(23, 59, 59, 999);
