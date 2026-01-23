@@ -55,6 +55,16 @@ function buildNotionBlocks(draft: Draft515): any[] {
     blocks.push(bulletItem(item));
   }
 
+  // Meetings without Granola notes (for manual review)
+  if (draft.meetingsWithoutNotes.length > 0) {
+    blocks.push(
+      toggle(
+        `📋 Other meetings without notes (${draft.meetingsWithoutNotes.length})`,
+        draft.meetingsWithoutNotes.map(meeting => bulletItem(meeting))
+      )
+    );
+  }
+
   // What I am thinking about Section
   blocks.push(heading2('🧠 What I am thinking about'));
   // Leave empty for user to fill in
@@ -65,17 +75,6 @@ function buildNotionBlocks(draft: Draft515): any[] {
 
   for (const priority of draft.priorities) {
     blocks.push(bulletItem(priority));
-  }
-
-  // Meetings without Granola notes (for manual review)
-  if (draft.meetingsWithoutNotes.length > 0) {
-    blocks.push(
-      paragraph(''),
-      toggle(
-        `📋 Other meetings without notes (${draft.meetingsWithoutNotes.length})`,
-        draft.meetingsWithoutNotes.map(meeting => bulletItem(meeting))
-      )
-    );
   }
 
   return blocks;
