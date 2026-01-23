@@ -26,11 +26,12 @@ export async function getThisWeeksMeetings(): Promise<CalendarEvent[]> {
 
   const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
-  // Get Monday-Friday of current week
   const now = new Date();
   const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday
+  const weekEnd = endOfWeek(now, { weekStartsOn: 1 }); // Sunday
+  // End on Friday at 11:59pm instead of Sunday
   const fridayEnd = new Date(weekStart);
-  fridayEnd.setDate(weekStart.getDate() + 4);
+  fridayEnd.setDate(fridayEnd.getDate() + 4);
   fridayEnd.setHours(23, 59, 59, 999);
 
   console.log(`Fetching calendar events from ${format(weekStart, 'MMM d')} to ${format(fridayEnd, 'MMM d')}`);
@@ -92,9 +93,9 @@ function extractMeetingLink(description?: string): string | undefined {
 // Helper to get a readable date range string
 export function getWeekDateRange(): { start: string; end: string; display: string } {
   const now = new Date();
-  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+  const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday
   const fridayEnd = new Date(weekStart);
-  fridayEnd.setDate(weekStart.getDate() + 4);
+  fridayEnd.setDate(fridayEnd.getDate() + 4); // Friday
 
   return {
     start: format(weekStart, 'yyyy-MM-dd'),

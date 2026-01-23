@@ -222,13 +222,14 @@ function extractMentions(content: string): string[] {
 }
 
 /**
- * Fetch Granola notes for the current week from the local cache.
+ * Fetch Granola notes for the target week from the local cache.
  */
 export async function getThisWeeksNotes(): Promise<GranolaNote[]> {
   const now = new Date();
   const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday
+  // End on Friday at 11:59pm instead of Sunday
   const fridayEnd = new Date(weekStart);
-  fridayEnd.setDate(weekStart.getDate() + 4);
+  fridayEnd.setDate(fridayEnd.getDate() + 4);
   fridayEnd.setHours(23, 59, 59, 999);
 
   console.log(`   Loading from local Granola cache for ${format(weekStart, 'MMM d')} - ${format(fridayEnd, 'MMM d')}`);
