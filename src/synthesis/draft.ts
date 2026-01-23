@@ -117,9 +117,14 @@ export async function synthesizeDraft(): Promise<Draft515> {
   // Step 6: Generate draft with Claude
   console.log('\n✨ Generating draft with Claude...\n');
 
-  const meetingsContext = matchedMeetings
+  // ONLY include meetings that have Granola notes - this prevents Claude
+  // from seeing meeting titles without content and mixing up information
+  const meetingsWithNotes = matchedMeetings.filter(m => m.hasNotes);
+  const meetingsContext = meetingsWithNotes
     .map(formatMatchedMeeting)
     .join('\n\n---\n\n');
+
+  console.log(`   Sending ${meetingsWithNotes.length} meetings with notes to Claude`);
 
   const slackContext = slackActivity.length > 0
     ? slackActivity.map(ch => {
@@ -153,10 +158,10 @@ Your response should be a complete 5:15 in this exact format:
 [2-3 sentences summarizing the week based ONLY on the provided notes]
 
 ### ✅ What I did
-- [One bullet per meeting that has notes]
+- [One bullet per meeting - start with the meeting name in bold]
+- [ONLY include information from THAT meeting's notes - never mix content between meetings]
 - [Summarize what the notes actually say - don't invent details]
 - [Use @FirstName LastName for people mentioned IN the notes]
-- [Skip meetings without notes]
 
 ### 🧠 What I am thinking about
 <!-- ${config.yourName} will write this section -->
