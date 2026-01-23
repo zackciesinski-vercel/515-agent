@@ -67,6 +67,17 @@ function buildNotionBlocks(draft: Draft515): any[] {
     blocks.push(bulletItem(priority));
   }
 
+  // Meetings without Granola notes (for manual review)
+  if (draft.meetingsWithoutNotes.length > 0) {
+    blocks.push(
+      paragraph(''),
+      toggle(
+        `📋 Other meetings without notes (${draft.meetingsWithoutNotes.length})`,
+        draft.meetingsWithoutNotes.map(meeting => bulletItem(meeting))
+      )
+    );
+  }
+
   return blocks;
 }
 
@@ -106,6 +117,17 @@ function bulletItem(text: string): any {
     type: 'bulleted_list_item',
     bulleted_list_item: {
       rich_text: parseRichText(text),
+    },
+  };
+}
+
+function toggle(title: string, children: any[]): any {
+  return {
+    object: 'block',
+    type: 'toggle',
+    toggle: {
+      rich_text: [{ type: 'text', text: { content: title } }],
+      children,
     },
   };
 }

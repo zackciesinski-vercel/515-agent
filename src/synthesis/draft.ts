@@ -223,7 +223,7 @@ function parseDraftResponse(
 
   const meetingsWithoutNotes = matchedMeetings
     .filter(m => !m.hasNotes)
-    .map(m => m.event.title);
+    .map(m => `${format(m.event.start, 'EEE M/d h:mma')} - ${m.event.title}`);
 
   return {
     date: today,
