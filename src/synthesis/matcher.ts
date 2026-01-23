@@ -1,6 +1,7 @@
 import { CalendarEvent } from '../collectors/calendar.js';
 import { GranolaNote } from '../collectors/granola.js';
 import { differenceInMinutes, format } from 'date-fns';
+import { config } from '../config.js';
 
 export interface MatchedMeeting {
   event: CalendarEvent;
@@ -35,6 +36,7 @@ export function matchNotesToEvents(
 
     if (bestMatch) {
       usedNotes.add(bestMatch.id);
+      console.log(`   ✓ "${event.title}" → "${bestMatch.title}" (score: ${bestScore.toFixed(2)})`);
     }
 
     matched.push({
@@ -48,13 +50,17 @@ export function matchNotesToEvents(
 }
 
 function calculateMatchScore(event: CalendarEvent, note: GranolaNote): number {
-  let score = 0;
-
-  // Title similarity (most important)
+  // Title similarity is required - don't match on time alone
   const titleSimilarity = calculateTitleSimilarity(event.title, note.title);
-  score += titleSimilarity * 0.6;
 
-  // Time proximity (within 2 hours is a strong signal)
+  // Require at least some title match (25% word overlap)
+  if (titleSimilarity < 0.25) {
+    return 0;
+  }
+
+  let score = titleSimilarity * 0.6;
+
+  // Time proximity bonus (only if titles match)
   const timeDiff = Math.abs(differenceInMinutes(event.start, note.date));
   if (timeDiff < 30) {
     score += 0.4;
@@ -68,11 +74,20 @@ function calculateMatchScore(event: CalendarEvent, note: GranolaNote): number {
 }
 
 function calculateTitleSimilarity(title1: string, title2: string): number {
+  // Words to ignore: your own name (appears in all your meetings) and common filler words
+  const yourName = config.yourName?.toLowerCase() || '';
+  const yourFirstName = yourName.split(/\s+/)[0] || '';
+  const ignoreWords = new Set([
+    yourName, yourFirstName,
+    'sync', 'meeting', 'call', 'chat', 'discussion', 'check', 'weekly', 'monthly'
+  ].filter(w => w.length > 0));
+
   const normalize = (s: string) =>
     s.toLowerCase()
       .replace(/[^\w\s]/g, '')
       .split(/\s+/)
-      .filter(w => w.length > 2);
+      .filter(w => w.length > 2)
+      .filter(w => !ignoreWords.has(w));
 
   const words1 = new Set(normalize(title1));
   const words2 = new Set(normalize(title2));
